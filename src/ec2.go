@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 type ec2Params struct {
@@ -55,9 +58,34 @@ func (e ec2Params) RetriveSG(matchFn func(key string, value string, permissionLe
 	return "", errors.New("Not Exists Valid SG")
 }
 
-// func (e ec2Params) MakeSG() (string, error){
+func (e ec2Params) MakeSG(vpcId string) (string, error){
+	input := &ec2.CreateSecurityGroupInput{
+		VpcId: aws.String(vpcId),
+		Description: aws.String("Whitelist SecurityGroup"),
+		GroupName: aws.String("whitelist-sg"),
+		TagSpecifications: []types.TagSpecification{
+			{
+				Tags: []types.Tag{
+					{
+						Key: aws.String("Properties"),
+						Value: aws.String("whitelist"),
+					},
+					{
+						Key: aws.String("CreatedAt"),
+						Value: aws.String(time.Now().Format("YYYY-MM-DD")),
+					},
+				},
+			},
+		},
+	}
 
-// } 
+	sgInfo, err := e.client.CreateSecurityGroup(e.co, input)
+	if err != nil {
+		return "", err
+	}
+
+	return *sgInfo.GroupId, nil
+} 
 
 func (e ec2Params) InjectSG() {
 

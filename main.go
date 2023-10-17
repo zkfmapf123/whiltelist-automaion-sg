@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"zkfmapf123/whitelist/src"
 )
@@ -23,10 +24,14 @@ func main() {
 		return false
 	})
 
-	// if err != nil {
+	if err != nil {
+		fmt.Println(err)
 
-	// }
+		if sgId, err = ec2.MakeSG(VPC_ID); err != nil {
+			log.Fatalln(err)
+		}
+	}
 
-	fmt.Println(sgId, err)
+	fmt.Println(sgId)
 
 }

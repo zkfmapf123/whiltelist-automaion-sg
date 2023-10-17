@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -27,7 +26,7 @@ func NewEC2(c context.Context) *ec2Params{
 	}
 }
 
-func (e ec2Params) RetriveSG() (string, error){	
+func (e ec2Params) RetriveSG(matchFn func(key string, value string, permissionLen int) bool) (string, error){	
 	input := &ec2.DescribeSecurityGroupsInput{}
 
 	sgInfos, err := e.client.DescribeSecurityGroups(e.co, input)
@@ -47,7 +46,7 @@ func (e ec2Params) RetriveSG() (string, error){
 			k ,v := *tag.Key, *tag.Value
 			
 			// check whitelist
-			if k == "Properties" && strings.Contains(v, "whitelist") && len(sgPermissionIps) < 50 {
+			if matchFn(k, v, len(sgPermissionIps)) {
 				return sgId, nil
 			}
 		}
@@ -56,9 +55,9 @@ func (e ec2Params) RetriveSG() (string, error){
 	return "", errors.New("Not Exists Valid SG")
 }
 
-func (e ec2Params) MakeSG() (string, error){
+// func (e ec2Params) MakeSG() (string, error){
 
-} 
+// } 
 
 func (e ec2Params) InjectSG() {
 

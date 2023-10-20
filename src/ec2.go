@@ -3,8 +3,8 @@ package src
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -58,21 +58,27 @@ func (e ec2Params) RetriveSG(matchFn func(key string, value string, permissionLe
 	return "", errors.New("Not Exists Valid SG")
 }
 
-func (e ec2Params) MakeSG(vpcId string) (string, error){
+func (e ec2Params) MakeSG(vpcId string, name string, now string) (string, error){
+
 	input := &ec2.CreateSecurityGroupInput{
 		VpcId: aws.String(vpcId),
 		Description: aws.String("Whitelist SecurityGroup"),
 		GroupName: aws.String("whitelist-sg"),
 		TagSpecifications: []types.TagSpecification{
 			{
+				ResourceType: "security-group",
 				Tags: []types.Tag{
 					{
+						Key : aws.String("Name"),
+						Value: aws.String(fmt.Sprintf("%s-%s", name,now)),
+					},
+					{
 						Key: aws.String("Properties"),
-						Value: aws.String("whitelist"),
+						Value: aws.String(name),
 					},
 					{
 						Key: aws.String("CreatedAt"),
-						Value: aws.String(time.Now().Format("YYYY-MM-DD")),
+						Value: aws.String(now),
 					},
 				},
 			},
@@ -87,7 +93,29 @@ func (e ec2Params) MakeSG(vpcId string) (string, error){
 	return *sgInfo.GroupId, nil
 } 
 
-func (e ec2Params) InjectSG() {
+func (e ec2Params) InjectSG(sgId string, port int, ip string) error {	
+	input := &ec2.UpdateSecurityGroupRuleDescriptionsIngressInput{
+		GroupId: aws.String(sgId),
+		IpPermissions: []types.IpPermission{
+			{
+				IpProtocol: aws.String("tcp"),
+				FromPort: aws.Int32(int32(port)),
+				ToPort: aws.Int32(int32(port)),
+				IpRanges : []types.IpRange{
+					{
+						CidrIp: aws.String(fmt.Sprintf("%s/32", ip)),
+					},
+				},
+			},
+		},
+	}
+
+	_, err := e.client.UpdateSecurityGroupRuleDescriptionsIngress(e.co, input)
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }
 

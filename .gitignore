@@ -1,4 +1,10 @@
 ## output
 *.zip
-dist
-nodejs
+hello
+
+## infra
+.terraform
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
